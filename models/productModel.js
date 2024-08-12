@@ -1,12 +1,35 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db'); // Ensure sequelize is imported correctly
 
-const productSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    description: { type: String, required: true },
-    price: { type: Number, required: true },
-    currency: { type: String, required: true },
-    imageUrl: { type: String, required: true },
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true } // Add user field
+const Product = sequelize.define('Product', {
+    name: { 
+        type: DataTypes.STRING, 
+        allowNull: false 
+    },
+    description: { 
+        type: DataTypes.STRING, 
+        allowNull: false 
+    },
+    price: { 
+        type: DataTypes.FLOAT, 
+        allowNull: false 
+    },
+    currency: { 
+        type: DataTypes.STRING, 
+        allowNull: false 
+    },
+    imageUrl: { 
+        type: DataTypes.STRING, 
+        allowNull: true 
+    },
+    userId: {
+        type: DataTypes.INTEGER, 
+        allowNull: false,
+        references: {
+            model: 'Users', 
+            key: 'id'
+        }
+    }
 });
 
-module.exports = mongoose.model('Product', productSchema);
+module.exports = Product;

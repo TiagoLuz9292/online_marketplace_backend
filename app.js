@@ -1,7 +1,8 @@
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
-const connectDB = require('./config/db');
+const { sequelize } = require('./config/db');
+// const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
@@ -30,7 +31,24 @@ app.use(session({
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 
 // Connect to database
-connectDB();
+
+sequelize.authenticate()
+    .then(() => {
+        console.log('PostgreSQL connected');
+        return sequelize.sync(); // Synchronize models with the database
+    })
+    .then(() => {
+        console.log('Database & tables created!');
+        const PORT = process.env.PORT || 3001;
+        app.listen(PORT, () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+        });
+    })
+    .catch(err => {
+        console.error('Unable to connect to the database:', err.message);
+    });
+
+//connectDB();
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -40,7 +58,3 @@ app.use('/api/products', productRoutes);  // Ensure this line is present
 // Serve static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});

@@ -1,27 +1,75 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const paymentMethodSchema = new mongoose.Schema({
-    methodType: { type: String, enum: ['credit_card', 'paypal'], required: true },
-    cardNumber: { type: String }, // For credit card only
-    expirationMonth: { type: Number }, // For credit card only
-    expirationYear: { type: Number }, // For credit card only
-    cardName: { type: String }, // For credit card only
-    cardSecret: { type: String }, // For credit card only
-    paypalEmail: { type: String } // For PayPal only
+const User = sequelize.define('User', {
+    username: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+    email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    role: {
+        type: DataTypes.ENUM('user', 'admin'),
+        defaultValue: 'user'
+    },
+    resetToken: {
+        type: DataTypes.STRING
+    },
+    resetTokenExpiration: {
+        type: DataTypes.DATE
+    },
+    accountBalance: {
+        type: DataTypes.FLOAT,
+        defaultValue: 0
+    },
+    accountBalanceCurrency: {
+        type: DataTypes.STRING,
+        defaultValue: 'USD'
+    },
 });
 
-const userSchema = new mongoose.Schema({
-    username: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' },
-    resetToken: { type: String }, // For password reset functionality
-    resetTokenExpiration: { type: Date },
-    accountBalance: { type: Number, default: 0 }, // Account Balance
-    accountBalanceCurrency: { type: String, default: 'USD' },
-    paymentMethods: [paymentMethodSchema] // Array of payment methods
+const PaymentMethod = sequelize.define('PaymentMethod', {
+    methodType: {
+        type: DataTypes.ENUM('credit_card', 'paypal'),
+        allowNull: false
+    },
+    cardNumber: {
+        type: DataTypes.STRING
+    },
+    expirationMonth: {
+        type: DataTypes.INTEGER
+    },
+    expirationYear: {
+        type: DataTypes.INTEGER
+    },
+    cardName: {
+        type: DataTypes.STRING
+    },
+    cardSecret: {
+        type: DataTypes.STRING
+    },
+    paypalEmail: {
+        type: DataTypes.STRING
+    },
 });
 
-const User = mongoose.model('User', userSchema);
+User.hasMany(PaymentMethod, {
+    as: 'paymentMethods',
+    foreignKey: {
+        name: 'userId',
+        allowNull: false
+    }
+});
+PaymentMethod.belongsTo(User, {
+    foreignKey: 'userId'
+});
 
-module.exports = User;
+module.exports = { User, PaymentMethod };

@@ -1,4 +1,4 @@
-const User = require('../models/userModel');
+const { User } = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -8,8 +8,7 @@ const register = async (req, res) => {
     try {
         const { username, email, password } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({ username, email, password: hashedPassword });
-        await user.save();
+        const user = await User.create({ username, email, password: hashedPassword });
         res.status(201).send('User registered successfully');
     } catch (err) {
         res.status(400).send(err.message);
@@ -20,7 +19,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ where: { email } });
         if (!user) {
             console.log('User not found');
             return res.status(400).json({ message: 'Invalid credentials' });
@@ -33,12 +32,12 @@ const login = async (req, res) => {
         }
 
         const payload = {
-            userId: user._id
+            userId: user.id
         };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-        console.log('Login successful', { token, userId: user._id });
-        res.status(200).json({ token, userId: user._id });
+        console.log('Login successful', { token, userId: user.id });
+        res.status(200).json({ token, userId: user.id });
     } catch (err) {
         console.log('Error during login:', err);
         res.status(500).json({ message: 'Server error' });
@@ -49,7 +48,7 @@ const login = async (req, res) => {
 const requestPasswordReset = async (req, res) => {
     try {
         const { email } = req.body;
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ where: { email } });
         if (!user) return res.status(400).send('User not found');
 
         // Generate reset token
@@ -74,16 +73,18 @@ const resetPassword = async (req, res) => {
     try {
         const { token, newPassword } = req.body;
         const user = await User.findOne({
-            resetToken: token,
-            resetTokenExpiration: { $gt: Date.now() }
+            where: {
+                resetToken: token,
+                resetTokenExpiration: { [Op.gt]: Date.now() }
+            }
         });
         if (!user) return res.status(400).send('Invalid or expired token');
 
         // Hash the new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
-        user.resetToken = undefined;
-        user.resetTokenExpiration = undefined;
+        user.resetToken = null;
+        user.resetTokenExpiration = null;
         await user.save();
 
         res.status(200).send('Password has been reset');
