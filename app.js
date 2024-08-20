@@ -28,7 +28,7 @@ app.use(session({
 }));
 
 // Enable CORS
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({ origin: '*', credentials: true }));
 
 // Connect to database
 
@@ -49,6 +49,10 @@ sequelize.authenticate()
     });
 
 //connectDB();
+
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
 
 // Use routes
 app.use('/api/auth', authRoutes);
